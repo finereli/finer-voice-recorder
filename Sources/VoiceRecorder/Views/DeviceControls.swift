@@ -15,6 +15,13 @@ struct DeviceControls: View {
         .padding(.horizontal, 16)
     }
 
+    // The borderless-button menu style measures its label at the label's
+    // ideal size instead of proposing the available width, so any
+    // `maxWidth: .infinity` inside the label collapses to content width and
+    // the name hugs the mic icon. The menu style does honor an EXPLICIT
+    // width, though. So: lay out a hidden copy of the label to claim the
+    // full-width footprint (and its natural height), then overlay the real
+    // Menu whose label is pinned to that width via GeometryReader.
     private var deviceMenu: some View {
         Menu {
             if model.devices.devices.isEmpty {
@@ -38,31 +45,11 @@ struct DeviceControls: View {
                 Label("Rescan Devices", systemImage: "arrow.clockwise")
             }
         } label: {
-            ZStack {
-                // Name stays centered; the icons are pinned to the edges so
-                // they don't shift it.
-                Text(model.devices.selectedDevice?.name ?? "No Input")
-                    .font(.system(size: 12, weight: .medium))
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 22)
-                HStack {
-                    Image(systemName: "mic.fill").font(.system(size: 12))
-                    Spacer()
-                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold))
-                }
-            }
-            .foregroundStyle(model.isRecording ? .secondary : .primary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .frame(maxWidth: .infinity)
-            .background(RoundedRectangle(cornerRadius: 7).fill(Color.primary.opacity(0.06)))
-            .contentShape(Rectangle())
+            menuLabel
         }
-        .menuStyle(.borderlessButton)
+        .menuStyle(.button)
+        .buttonStyle(.plain)
         .menuIndicator(.hidden)
-        // Force the menu to fill the sidebar width so the label can center;
-        // a borderless menu otherwise hugs its content on the left.
         .frame(maxWidth: .infinity)
         .noFocusRing()
         .pointingHandCursor()
@@ -70,6 +57,34 @@ struct DeviceControls: View {
         .help(model.isRecording
               ? "Stop recording to change the input device"
               : "Choose which microphone to record from")
+    }
+
+    /// The pill: mic icon pinned left, chevron pinned right, name centered.
+    /// `.menuStyle(.button)` + `.buttonStyle(.plain)` honors the width (unlike
+    /// `.borderlessButton`, which collapses its label), so the name centers.
+    private var menuLabel: some View {
+        // Core Audio device names can carry stray padding; trim so the
+        // centered text is truly centered.
+        let name = (model.devices.selectedDevice?.name ?? "No Input")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return ZStack {
+            Text(name)
+                .font(.system(size: 12, weight: .medium))
+                .lineLimit(1)
+                .padding(.horizontal, 22)
+                .frame(maxWidth: .infinity)
+            HStack {
+                Image(systemName: "mic.fill").font(.system(size: 12))
+                Spacer()
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold))
+            }
+        }
+        .foregroundStyle(model.isRecording ? .secondary : .primary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 7).fill(Color.primary.opacity(0.06)))
+        .contentShape(Rectangle())
     }
 }
 
