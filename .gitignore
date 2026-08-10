@@ -1,0 +1,13 @@
+# SwiftPM build output
+.build/
+*.app
+
+# macOS
+.DS_Store
+
+# Xcode / SwiftPM user data
+.swiftpm/
+*.xcodeproj
+
+# Local scratch
+/tmp/
