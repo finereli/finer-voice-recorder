@@ -16,11 +16,42 @@ final class AudioRecorder: ObservableObject {
     private var startDate: Date?
     private var timer: Timer?
     private var lastSampleStamp: TimeInterval = 0
+    // Engine start/stop and file finalization block for tens of ms, so they
+    // run here instead of on the main thread.
+    private let audioQueue = DispatchQueue(label: "com.finereli.voicerecorder.audio")
 
-    /// Begin recording to `url` from `deviceID`. Throws on setup failure.
-    func start(deviceID: AudioDeviceID, to url: URL) throws {
-        guard !isRecording else { return }
+    /// Begin recording to `url` from `deviceID`. UI state flips immediately;
+    /// the audio engine spins up off the main thread and reports back.
+    func start(deviceID: AudioDeviceID, to url: URL, completion: @escaping (Error?) -> Void) {
+        guard !isRecording else { completion(nil); return }
 
+        // Instant UI feedback.
+        liveSamples = []
+        level = 0
+        lastSampleStamp = 0
+        startDate = Date()
+        isRecording = true
+        startTimer()
+
+        audioQueue.async { [weak self] in
+            guard let self else { return }
+            do {
+                try self.configureAndStart(deviceID: deviceID, url: url)
+                DispatchQueue.main.async { completion(nil) }
+            } catch {
+                DispatchQueue.main.async {
+                    self.stopTimer()
+                    self.isRecording = false
+                    self.startDate = nil
+                    self.file = nil
+                    completion(error)
+                }
+            }
+        }
+    }
+
+    /// Heavy setup, run on `audioQueue`.
+    private func configureAndStart(deviceID: AudioDeviceID, url: URL) throws {
         // Point the engine's input at the selected hardware device.
         if deviceID != 0, let unit = engine.inputNode.audioUnit {
             var dev = deviceID
@@ -54,39 +85,45 @@ final class AudioRecorder: ObservableObject {
         ]
         file = try AVAudioFile(forWriting: url, settings: settings)
 
-        liveSamples = []
-        level = 0
-        lastSampleStamp = 0
-
         input.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
             self?.process(buffer)
         }
 
         engine.prepare()
         try engine.start()
+    }
 
-        startDate = Date()
-        isRecording = true
+    /// Stop recording. UI flips immediately; the engine tears down off the
+    /// main thread and reports the final duration back.
+    func stop(completion: @escaping (TimeInterval) -> Void) {
+        guard isRecording else { completion(elapsed); return }
+        let duration = startDate.map { Date().timeIntervalSince($0) } ?? elapsed
+
+        // Instant UI feedback.
+        isRecording = false
+        level = 0
+        stopTimer()
+        startDate = nil
+
+        audioQueue.async { [weak self] in
+            guard let self else { DispatchQueue.main.async { completion(duration) }; return }
+            self.engine.inputNode.removeTap(onBus: 0)
+            self.engine.stop()
+            self.file = nil   // finalize and flush the .m4a
+            DispatchQueue.main.async { completion(duration) }
+        }
+    }
+
+    private func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
             guard let self, let start = self.startDate else { return }
             self.elapsed = Date().timeIntervalSince(start)
         }
     }
 
-    /// Stop recording. Returns the final duration in seconds.
-    @discardableResult
-    func stop() -> TimeInterval {
-        guard isRecording else { return elapsed }
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
+    private func stopTimer() {
         timer?.invalidate()
         timer = nil
-        let duration = startDate.map { Date().timeIntervalSince($0) } ?? elapsed
-        file = nil
-        startDate = nil
-        isRecording = false
-        level = 0
-        return duration
     }
 
     // MARK: - Buffer processing

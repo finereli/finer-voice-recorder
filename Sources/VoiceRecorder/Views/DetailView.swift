@@ -11,6 +11,8 @@ struct DetailView: View {
         Group {
             if model.isRecording {
                 recordingView
+            } else if model.selection.count > 1 {
+                summaryView
             } else if let recording = model.selected {
                 playbackView(recording)
             } else {
@@ -19,8 +21,29 @@ struct DetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .toolbar { toolbarContent }
-        .onChange(of: model.selectedID) { _ in loadWaveform() }
+        .onChange(of: model.selection) { _ in loadWaveform() }
         .onAppear { loadWaveform() }
+    }
+
+    // MARK: - Multi-selection summary
+
+    private var summaryView: some View {
+        let items = model.selectedRecordings
+        let total = items.reduce(0) { $0 + $1.duration }
+        return VStack(spacing: 10) {
+            Image(systemName: "checklist")
+                .font(.system(size: 44))
+                .foregroundStyle(.secondary)
+            Text("\(items.count) recordings selected")
+                .font(.system(size: 20, weight: .semibold))
+            Text("\(Format.duration(total)) total")
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+            Text("Use the toolbar or right-click to export, favorite, or delete them.")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
+        }
     }
 
     // MARK: - Empty
@@ -153,7 +176,27 @@ struct DetailView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        if let recording = model.selected, !model.isRecording {
+        if !model.isRecording && model.selection.count > 1 {
+            let targets = model.selectedRecordings
+            let allFav = targets.allSatisfy { $0.isFavorite }
+            ToolbarItemGroup {
+                Button { model.exportToFolder(targets) } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }.help("Export \(targets.count) recordings to a folder")
+
+                Button { model.setFavorite(targets, !allFav) } label: {
+                    Image(systemName: allFav ? "heart.fill" : "heart")
+                }.help(allFav ? "Unfavorite all" : "Favorite all")
+
+                Button { model.reveal(targets) } label: {
+                    Image(systemName: "folder")
+                }.help("Reveal in Finder")
+
+                Button(role: .destructive) { model.deleteMany(targets) } label: {
+                    Image(systemName: "trash")
+                }.help("Delete \(targets.count) recordings")
+            }
+        } else if let recording = model.selected, !model.isRecording {
             ToolbarItemGroup {
                 Button { model.export(recording) } label: {
                     Image(systemName: "square.and.arrow.up")

@@ -13,7 +13,11 @@ final class AppModel: ObservableObject {
     let player = AudioPlayer()
     let transcriber = Transcriber()
 
-    @Published var selectedID: Recording.ID?
+    /// The set of selected recordings (supports multi-select). Loading the
+    /// player is driven off changes here so it stays in sync.
+    @Published var selection: Set<Recording.ID> = [] {
+        didSet { if selection != oldValue { syncPlayerToSelection() } }
+    }
     @Published var searchText: String = ""
     @Published var errorMessage: String?
 
@@ -41,9 +45,35 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// The single selected recording, or nil when zero or many are selected.
+    var selectedID: Recording.ID? { selection.count == 1 ? selection.first : nil }
+
     var selected: Recording? {
         guard let selectedID else { return nil }
         return store.recordings.first { $0.id == selectedID }
+    }
+
+    /// Selected recordings in list order.
+    var selectedRecordings: [Recording] {
+        filteredRecordings.filter { selection.contains($0.id) }
+    }
+
+    /// Right-click targets: the whole selection when the clicked row is part of
+    /// a multi-selection, otherwise just the clicked row.
+    func contextTargets(for recording: Recording) -> [Recording] {
+        if selection.contains(recording.id) && selection.count > 1 {
+            return selectedRecordings
+        }
+        return [recording]
+    }
+
+    private func syncPlayerToSelection() {
+        if let recording = selected {
+            let url = store.fileURL(for: recording)
+            if player.url != url { player.load(url) }
+        } else {
+            player.stop()
+        }
     }
 
     var filteredRecordings: [Recording] {
@@ -84,44 +114,37 @@ final class AppModel: ObservableObject {
         let (fileName, url) = store.newRecordingURL()
         pendingURL = url
         pendingFileName = fileName
-        do {
-            try recorder.start(deviceID: devices.selectedDeviceID, to: url)
-        } catch {
-            errorMessage = error.localizedDescription
-            pendingURL = nil
-            pendingFileName = nil
+        recorder.start(deviceID: devices.selectedDeviceID, to: url) { [weak self] error in
+            guard let self, let error else { return }
+            self.errorMessage = error.localizedDescription
+            if let u = self.pendingURL { try? FileManager.default.removeItem(at: u) }
+            self.pendingURL = nil
+            self.pendingFileName = nil
         }
     }
 
     private func finishRecording() {
-        let duration = recorder.stop()
-        guard let url = pendingURL, let fileName = pendingFileName else { return }
-        pendingURL = nil
-        pendingFileName = nil
+        recorder.stop { [weak self] duration in
+            guard let self else { return }
+            guard let url = self.pendingURL, let fileName = self.pendingFileName else { return }
+            self.pendingURL = nil
+            self.pendingFileName = nil
 
-        // Discard empty/too-short recordings.
-        guard duration >= 0.4 else {
-            try? FileManager.default.removeItem(at: url)
-            return
+            // Discard empty/too-short recordings.
+            guard duration >= 0.4 else {
+                try? FileManager.default.removeItem(at: url)
+                return
+            }
+
+            let title = self.store.nextDefaultTitle()
+            let recording = Recording(title: title, fileName: fileName,
+                                      duration: duration, languageCode: self.preferredLanguage)
+            self.store.add(recording)
+            self.selection = [recording.id]   // loads the player via didSet
+
+            // Kick off transcription automatically.
+            self.transcribe(recording)
         }
-
-        let title = store.nextDefaultTitle()
-        let recording = Recording(title: title, fileName: fileName,
-                                  duration: duration, languageCode: preferredLanguage)
-        store.add(recording)
-        selectedID = recording.id
-        player.load(url)
-
-        // Kick off transcription automatically.
-        transcribe(recording)
-    }
-
-    // MARK: - Selection & playback
-
-    func select(_ recording: Recording) {
-        guard recording.id != selectedID else { return }
-        selectedID = recording.id
-        player.load(store.fileURL(for: recording))
     }
 
     // MARK: - Transcription
@@ -192,18 +215,93 @@ final class AppModel: ObservableObject {
         store.toggleFavorite(recording)
     }
 
-    func delete(_ recording: Recording) {
-        if recording.id == selectedID {
-            player.stop()
-            selectedID = nil
+    func setFavorite(_ recordings: [Recording], _ favorite: Bool) {
+        for r in recordings where r.isFavorite != favorite {
+            var updated = r
+            updated.isFavorite = favorite
+            store.update(updated)
         }
-        store.delete(recording)
+    }
+
+    func delete(_ recording: Recording) {
+        deleteMany([recording])
+    }
+
+    func deleteMany(_ recordings: [Recording]) {
+        guard !recordings.isEmpty else { return }
+        let ids = Set(recordings.map { $0.id })
+        let affectsSelection = !selection.isDisjoint(with: ids)
+        // Land on a sensible survivor so repeated deletes keep flowing.
+        let survivor = affectsSelection ? nextSurvivor(deleting: ids, in: filteredRecordings) : nil
+
+        for r in recordings { store.delete(r) }
+
+        if affectsSelection {
+            selection = survivor.map { [$0] } ?? []
+        } else {
+            selection = selection.subtracting(ids)
+        }
+    }
+
+    /// After deleting `ids` from `list`, the id to select next: the first
+    /// survivor after the deleted block, else the nearest one before it.
+    private func nextSurvivor(deleting ids: Set<Recording.ID>, in list: [Recording]) -> Recording.ID? {
+        guard let maxIdx = list.lastIndex(where: { ids.contains($0.id) }) else { return nil }
+        if maxIdx + 1 < list.count { return list[maxIdx + 1].id }
+        guard let minIdx = list.firstIndex(where: { ids.contains($0.id) }), minIdx > 0 else { return nil }
+        return list[minIdx - 1].id
     }
 
     // MARK: - Export
 
     func revealInFinder(_ recording: Recording) {
-        NSWorkspace.shared.activateFileViewerSelecting([store.fileURL(for: recording)])
+        reveal([recording])
+    }
+
+    func reveal(_ recordings: [Recording]) {
+        NSWorkspace.shared.activateFileViewerSelecting(recordings.map { store.fileURL(for: $0) })
+    }
+
+    /// Bulk export: pick one folder, then write each recording's audio (and
+    /// transcript, if any) into it.
+    func exportToFolder(_ recordings: [Recording]) {
+        guard !recordings.isEmpty else { return }
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.prompt = "Export Here"
+        panel.message = "Choose a folder to export \(recordings.count) recording\(recordings.count == 1 ? "" : "s")."
+        panel.begin { [weak self] response in
+            guard let self, response == .OK, let dir = panel.url else { return }
+            var failed = 0
+            for r in recordings {
+                let base = self.safeName(r.title)
+                let audioDest = self.uniqueURL(in: dir, base: base, ext: "m4a")
+                do {
+                    try FileManager.default.copyItem(at: self.store.fileURL(for: r), to: audioDest)
+                } catch {
+                    failed += 1
+                }
+                if let transcript = r.transcript, !transcript.isEmpty {
+                    let txtDest = self.uniqueURL(in: dir, base: base, ext: "txt")
+                    try? transcript.data(using: .utf8)?.write(to: txtDest)
+                }
+            }
+            if failed > 0 {
+                self.errorMessage = "Couldn't export \(failed) of \(recordings.count) recordings."
+            }
+        }
+    }
+
+    private func uniqueURL(in dir: URL, base: String, ext: String) -> URL {
+        var candidate = dir.appendingPathComponent("\(base).\(ext)")
+        var n = 2
+        while FileManager.default.fileExists(atPath: candidate.path) {
+            candidate = dir.appendingPathComponent("\(base) \(n).\(ext)")
+            n += 1
+        }
+        return candidate
     }
 
     func export(_ recording: Recording) {

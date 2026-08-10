@@ -8,29 +8,12 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            List(selection: Binding(
-                get: { model.selectedID },
-                set: { id in
-                    if let id, let r = model.store.recordings.first(where: { $0.id == id }) {
-                        model.select(r)
-                    }
-                }
-            )) {
+            List(selection: $model.selection) {
                 Section("All Recordings") {
                     ForEach(model.filteredRecordings) { recording in
                         RecordingRow(recording: recording)
                             .tag(recording.id)
-                            .contextMenu {
-                                Button("Export Audio…") { model.export(recording) }
-                                Button("Export Transcript…") { model.exportTranscript(recording) }
-                                Button("Reveal in Finder") { model.revealInFinder(recording) }
-                                Divider()
-                                Button(recording.isFavorite ? "Unfavorite" : "Favorite") {
-                                    model.toggleFavorite(recording)
-                                }
-                                Divider()
-                                Button("Delete", role: .destructive) { model.delete(recording) }
-                            }
+                            .contextMenu { contextMenu(for: recording) }
                     }
                 }
             }
@@ -49,6 +32,32 @@ struct SidebarView: View {
         .onAppear {
             // Default keyboard focus to the list so controls don't grab a ring.
             DispatchQueue.main.async { listFocused = true }
+        }
+    }
+
+    /// Right-click menu. Acts on the whole selection when the clicked row is
+    /// part of a multi-selection, otherwise on just that row.
+    @ViewBuilder
+    private func contextMenu(for recording: Recording) -> some View {
+        let targets = model.contextTargets(for: recording)
+        if targets.count > 1 {
+            Button("Export \(targets.count) to Folder…") { model.exportToFolder(targets) }
+            Button("Reveal in Finder") { model.reveal(targets) }
+            Divider()
+            Button("Favorite") { model.setFavorite(targets, true) }
+            Button("Unfavorite") { model.setFavorite(targets, false) }
+            Divider()
+            Button("Delete \(targets.count)", role: .destructive) { model.deleteMany(targets) }
+        } else {
+            Button("Export Audio…") { model.export(recording) }
+            Button("Export Transcript…") { model.exportTranscript(recording) }
+            Button("Reveal in Finder") { model.revealInFinder(recording) }
+            Divider()
+            Button(recording.isFavorite ? "Unfavorite" : "Favorite") {
+                model.toggleFavorite(recording)
+            }
+            Divider()
+            Button("Delete", role: .destructive) { model.delete(recording) }
         }
     }
 }
@@ -100,7 +109,6 @@ struct RecordButton: View {
             ZStack {
                 Circle()
                     .stroke(Color.secondary.opacity(0.5), lineWidth: 3)
-                    .frame(width: 58, height: 58)
                 if model.isRecording {
                     RoundedRectangle(cornerRadius: 5)
                         .fill(Color.red)
@@ -111,6 +119,9 @@ struct RecordButton: View {
                         .frame(width: 46, height: 46)
                 }
             }
+            .frame(width: 58, height: 58)
+            // Make the whole circle clickable, not just the stroke and shape.
+            .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .help(model.isRecording ? "Stop recording" : "Start recording")
