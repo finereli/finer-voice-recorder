@@ -11,3 +11,6 @@
 
 # Local scratch
 /tmp/
+
+# Release archives
+*.zip

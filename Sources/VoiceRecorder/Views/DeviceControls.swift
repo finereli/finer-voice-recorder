@@ -61,6 +61,9 @@ struct DeviceControls: View {
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
+        // Force the menu to fill the sidebar width so the label can center;
+        // a borderless menu otherwise hugs its content on the left.
+        .frame(maxWidth: .infinity)
         .noFocusRing()
         .pointingHandCursor()
         .disabled(model.isRecording)
