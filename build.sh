@@ -10,7 +10,7 @@ SIGN="${SIGN:-0}"
 if [ "$NOTARIZE" = "1" ]; then SIGN=1; fi
 DEVELOPER_ID="Developer ID Application: ELI FINER (A59G53TN44)"
 NOTARY_PROFILE="YOULEARN_NOTARY"
-APP="VoiceRecorder.app"
+APP="Finer Voice Recorder.app"
 
 swift build -c release --arch arm64 --arch x86_64
 BIN=$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)

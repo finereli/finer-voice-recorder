@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>Voice Recorder</string>
+    <string>Finer Voice Recorder</string>
     <key>CFBundleDisplayName</key>
-    <string>Voice Recorder</string>
+    <string>Finer Voice Recorder</string>
     <key>CFBundleExecutable</key>
     <string>VoiceRecorder</string>
     <key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>1.0.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleIconFile</key>

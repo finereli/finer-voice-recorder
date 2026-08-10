@@ -1,0 +1,28 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tileGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7C5CFF"/>
+      <stop offset="1" stop-color="#FF6FA5"/>
+    </linearGradient>
+  </defs>
+
+  <g id="tile">
+    <rect x="0" y="0" width="512" height="512" rx="114" ry="114" fill="url(#tileGradient)"/>
+  </g>
+
+  <g id="pulse" fill="none" stroke="#FFF6EC" stroke-linecap="round">
+    <circle cx="230" cy="262" r="70" stroke-width="18"/>
+    <path d="M 152 190 A 110 110 0 0 0 152 334" stroke-width="18"/>
+    <path d="M 308 190 A 110 110 0 0 1 308 334" stroke-width="18"/>
+    <path d="M 118 150 A 160 160 0 0 0 118 374" stroke-width="16"/>
+    <path d="M 342 150 A 160 160 0 0 1 342 374" stroke-width="16"/>
+  </g>
+
+  <circle id="dot" cx="230" cy="262" r="30" fill="#FFF6EC"/>
+
+  <g id="bubbles" fill="#FFF6EC">
+    <circle cx="372" cy="188" r="26"/>
+    <circle cx="410" cy="132" r="17"/>
+    <circle cx="384" cy="96" r="11"/>
+  </g>
+</svg>

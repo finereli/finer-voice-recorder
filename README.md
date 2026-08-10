@@ -1,4 +1,4 @@
-# Voice Recorder
+# Finer Voice Recorder
 
 A native macOS voice-recording app in the spirit of Apple's Voice Memos, built
 as a pure SwiftPM SwiftUI app.
@@ -32,7 +32,7 @@ as a pure SwiftPM SwiftUI app.
 ./build.sh              # fast local ad-hoc build
 SIGN=1 ./build.sh       # Developer ID signed (hardened runtime)
 NOTARIZE=1 ./build.sh   # signed + Apple-notarized + stapled, no Gatekeeper warning
-open VoiceRecorder.app
+open "Finer Voice Recorder.app"
 ```
 
 Requires macOS 13+. First launch prompts for microphone and speech-recognition

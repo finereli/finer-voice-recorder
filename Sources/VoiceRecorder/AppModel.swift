@@ -18,7 +18,8 @@ final class AppModel: ObservableObject {
     @Published var errorMessage: String?
 
     /// The language most recently chosen, remembered for new transcriptions.
-    @Published var preferredLanguage: String = "he-IL"
+    /// Defaults to automatic detection.
+    @Published var preferredLanguage: String = autoLanguageCode
 
     private var pendingURL: URL?
     private var pendingFileName: String?
@@ -29,7 +30,6 @@ final class AppModel: ObservableObject {
         // Ask for the microphone up front so macOS shows its permission prompt
         // rather than silently handing us a muted input stream.
         AVCaptureDevice.requestAccess(for: .audio) { _ in }
-        preferredLanguage = transcriber.defaultLanguageCode
 
         // Re-publish when any owned sub-object changes so views observing the
         // AppModel stay in sync with the recorder, player, devices, etc.
@@ -128,8 +128,28 @@ final class AppModel: ObservableObject {
 
     func transcribe(_ recording: Recording) {
         let lang = recording.languageCode ?? preferredLanguage
-        preferredLanguage = lang
         let url = store.fileURL(for: recording)
+
+        // Automatic detection: try candidate languages and keep the best.
+        if lang == autoLanguageCode {
+            let candidates = transcriber.autoCandidates(preferred: preferredLanguage)
+            transcriber.autoTranscribe(url: url, candidates: candidates) { [weak self] result in
+                guard let self else { return }
+                switch result {
+                case .success(let (text, code)):
+                    if var r = self.store.recordings.first(where: { $0.id == recording.id }) {
+                        r.transcript = text
+                        r.languageCode = code   // resolved to the detected language
+                        self.store.update(r)
+                    }
+                case .failure(let error):
+                    self.errorMessage = error.localizedDescription
+                }
+            }
+            return
+        }
+
+        preferredLanguage = lang
         transcriber.transcribe(url: url, languageCode: lang, partial: { [weak self] text in
             guard let self, var r = self.store.recordings.first(where: { $0.id == recording.id })
             else { return }
@@ -203,6 +223,16 @@ final class AppModel: ObservableObject {
                 self.errorMessage = "Export failed: \(error.localizedDescription)"
             }
         }
+    }
+
+    func copyTranscript(_ recording: Recording) {
+        guard let transcript = recording.transcript, !transcript.isEmpty else {
+            errorMessage = "This recording has no transcript yet."
+            return
+        }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(transcript, forType: .string)
     }
 
     func exportTranscript(_ recording: Recording) {

@@ -1,0 +1,38 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tileGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF6FA5"/>
+      <stop offset="1" stop-color="#FF7E4B"/>
+    </linearGradient>
+    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF6FA5"/>
+      <stop offset="1" stop-color="#FF7E4B"/>
+    </linearGradient>
+  </defs>
+
+  <g id="tile">
+    <rect x="0" y="0" width="512" height="512" rx="114" ry="114" fill="url(#tileGrad)"/>
+    <rect x="0" y="0" width="512" height="512" rx="114" ry="114" fill="#FFFFFF" opacity="0.06"/>
+  </g>
+
+  <g id="bubble">
+    <path d="M256 92
+             C 154 92, 78 158, 78 244
+             C 78 314, 128 372, 202 393
+             L 202 424
+             C 202 438, 218 445, 229 436
+             L 276 397
+             C 279 396, 282 396, 285 396
+             C 385 393, 434 328, 434 244
+             C 434 158, 358 92, 256 92 Z"
+          fill="#FFF6EC"/>
+  </g>
+
+  <g id="wave">
+    <rect x="131" y="214" width="34" height="60" rx="17" ry="17" fill="url(#barGrad)"/>
+    <rect x="185" y="176" width="34" height="136" rx="17" ry="17" fill="url(#barGrad)"/>
+    <rect x="239" y="150" width="34" height="188" rx="17" ry="17" fill="url(#barGrad)"/>
+    <rect x="293" y="188" width="34" height="112" rx="17" ry="17" fill="url(#barGrad)"/>
+    <rect x="347" y="220" width="34" height="48" rx="17" ry="17" fill="url(#barGrad)"/>
+  </g>
+</svg>

@@ -1,0 +1,31 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tileGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2FC4B2"/>
+      <stop offset="1" stop-color="#3BD07A"/>
+    </linearGradient>
+  </defs>
+
+  <g id="tile">
+    <rect x="0" y="0" width="512" height="512" rx="114" ry="114" fill="url(#tileGrad)"/>
+  </g>
+
+  <g id="waves" fill="none" stroke="#FFF6EC" stroke-width="16" stroke-linecap="round">
+    <path d="M150 200 A80 80 0 0 0 150 312"/>
+    <path d="M116 168 A128 128 0 0 0 116 344"/>
+    <path d="M362 200 A80 80 0 0 1 362 312"/>
+    <path d="M396 168 A128 128 0 0 1 396 344"/>
+  </g>
+
+  <g id="dots" fill="#FFF6EC">
+    <circle cx="120" cy="256" r="14"/>
+    <circle cx="392" cy="256" r="14"/>
+  </g>
+
+  <g id="mic" fill="#FFF6EC">
+    <rect x="196" y="132" width="120" height="176" rx="60" ry="60"/>
+    <path d="M180 268 a76 76 0 0 0 152 0" fill="none" stroke="#FFF6EC" stroke-width="20" stroke-linecap="round"/>
+    <rect x="244" y="330" width="24" height="44" rx="12"/>
+    <rect x="200" y="372" width="112" height="26" rx="13"/>
+  </g>
+</svg>

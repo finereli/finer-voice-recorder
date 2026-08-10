@@ -1,0 +1,42 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tileGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF7E6B"/>
+      <stop offset="1" stop-color="#FF5C8A"/>
+    </linearGradient>
+    <radialGradient id="tileHighlight" cx="0.5" cy="0.28" r="0.75">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <g id="tile">
+    <rect x="0" y="0" width="512" height="512" rx="114" ry="114" fill="url(#tileGrad)"/>
+    <rect x="0" y="0" width="512" height="512" rx="114" ry="114" fill="url(#tileHighlight)"/>
+  </g>
+
+  <g id="mic">
+    <!-- stand base -->
+    <rect x="196" y="404" width="120" height="30" rx="15" fill="#FFF6EC"/>
+    <!-- stand neck -->
+    <rect x="242" y="352" width="28" height="66" rx="14" fill="#FFF6EC"/>
+    <!-- U-shaped cradle -->
+    <path d="M150 258 a106 106 0 0 0 212 0 v-30 a18 18 0 0 0 -36 0 v30 a70 70 0 0 1 -140 0 v-30 a18 18 0 0 0 -36 0 z" fill="#FFF6EC"/>
+    <!-- mic capsule body -->
+    <rect x="182" y="86" width="148" height="228" rx="74" fill="#FFF6EC"/>
+    <!-- soft accent grille band -->
+    <rect x="182" y="150" width="148" height="16" rx="8" fill="#FFE0D0"/>
+    <rect x="182" y="182" width="148" height="16" rx="8" fill="#FFE0D0"/>
+  </g>
+
+  <g id="face">
+    <!-- eyes -->
+    <circle cx="228" cy="238" r="15" fill="#5A2A2E"/>
+    <circle cx="284" cy="238" r="15" fill="#5A2A2E"/>
+    <!-- cheeks -->
+    <circle cx="205" cy="270" r="14" fill="#FF8FA8" opacity="0.65"/>
+    <circle cx="307" cy="270" r="14" fill="#FF8FA8" opacity="0.65"/>
+    <!-- happy smile -->
+    <path d="M226 274 q30 34 60 0" fill="none" stroke="#5A2A2E" stroke-width="12" stroke-linecap="round"/>
+  </g>
+</svg>

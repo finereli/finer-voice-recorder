@@ -100,10 +100,12 @@ struct DetailView: View {
             } else {
                 Text(recording.title)
                     .font(.system(size: 18, weight: .semibold))
-                    .onTapGesture(count: 2) {
+                    .iBeamCursor()
+                    .onTapGesture {
                         titleDraft = recording.title
                         editingTitle = true
                     }
+                    .help("Click to rename")
             }
             Spacer()
         }

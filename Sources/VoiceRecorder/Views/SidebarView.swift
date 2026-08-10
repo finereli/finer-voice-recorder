@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Left column: search, the recording list, and the big record button.
+/// Left column: search, the recording list, the big record button, and the
+/// input-device selector with its level meter.
 struct SidebarView: View {
     @EnvironmentObject var model: AppModel
+    @FocusState private var listFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,12 +34,21 @@ struct SidebarView: View {
                     }
                 }
             }
+            .focused($listFocused)
             .searchable(text: $model.searchText, placement: .sidebar,
                         prompt: "Titles, Transcripts")
 
             Divider()
-            RecordButton()
-                .padding(.vertical, 14)
+
+            VStack(spacing: 12) {
+                RecordButton()
+                DeviceControls()
+            }
+            .padding(.vertical, 14)
+        }
+        .onAppear {
+            // Default keyboard focus to the list so controls don't grab a ring.
+            DispatchQueue.main.async { listFocused = true }
         }
     }
 }
