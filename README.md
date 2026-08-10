@@ -1,52 +1,49 @@
 # Finer Voice Recorder
 
-A native macOS voice-recording app in the spirit of Apple's Voice Memos, built
-as a pure SwiftPM SwiftUI app.
+A clean, native macOS voice recorder that transcribes what you say - in your language - and never makes you guess which microphone it's using.
 
-## What it does
+Think of it as Voice Memos with two things it always got wrong fixed: the input device is right there in front of you, and every recording gets a transcript you can actually read, search, and copy.
 
-- **Records to compressed `.m4a`** (AAC) via `AVAudioEngine`. A ~6-second clip is
-  a few dozen KB, not megabytes.
-- **Input device selection is a first-class, always-visible control.** The bar
-  across the top of the window lists every Core Audio input device with a live
-  level meter, and hot-plugging a device updates the list automatically. You
-  choose the mic before you hit record, never buried in a menu.
-- **Built-in transcription** using Apple's on-device/relay Speech framework, in
-  any of the 63 languages macOS supports - **including Hebrew (he-IL)**. The
-  transcript panel renders right-to-left for Hebrew/Arabic/Farsi. Recordings are
-  transcribed automatically after capture, and you can re-transcribe in a
-  different language anytime.
-- **Easy filesystem export.** Every recording has "Export Audio…" (save-panel
-  copy of the `.m4a`), "Export Transcript…" (`.txt`), and "Reveal in Finder".
-- Search across titles and transcripts, favorites, rename, delete, 15-second
-  skip, click-to-seek waveform.
+## Why you might want it
 
-## Where files live
+- **Always record from the right microphone.** The input picker sits under the record button with a live level meter, so you see and choose your source before you hit record. No more recording a whole meeting off the wrong mic.
+- **Transcripts in 63 languages, Hebrew included.** Recordings are transcribed automatically. It can detect the language on its own, and Hebrew, Arabic, and other right-to-left languages read the way they should.
+- **Everything stays searchable.** Search across titles and transcripts to find that one thing someone said last week.
+- **Small files.** Recordings are compressed (`.m4a`), so hours of audio don't eat your disk.
+- **Your recordings are yours.** Export any recording - or a whole batch - to a folder, copy a transcript to the clipboard, or reveal the file in Finder. Nothing is locked in.
 
-`~/Library/Application Support/VoiceRecorder/` - the `.m4a` files plus a
-`recordings.json` manifest holding titles, durations, languages and transcripts.
+## Good for
 
-## Build
+- **Interviews and meetings** - record, then read the transcript instead of scrubbing audio.
+- **Voice notes** - capture a thought, find it later by what you said.
+- **Language practice** - speak, see the transcription, check yourself.
+- **Drafting out loud** - talk through an idea and get text back.
 
-```bash
-./build.sh              # fast local ad-hoc build
-SIGN=1 ./build.sh       # Developer ID signed (hardened runtime)
-NOTARIZE=1 ./build.sh   # signed + Apple-notarized + stapled, no Gatekeeper warning
-open "Finer Voice Recorder.app"
-```
+## Getting started
 
-Requires macOS 13+. First launch prompts for microphone and speech-recognition
-permission.
+1. Download the latest `.zip` from [Releases](https://github.com/finereli/finer-voice-recorder/releases) and unzip it.
+2. Move **Finer Voice Recorder** to your Applications folder and open it.
+3. Allow microphone and speech-recognition access when asked.
 
-## Architecture
+That's it. It's signed and notarized by Apple, so it opens with no scary warnings.
 
-| File | Role |
-|------|------|
-| `AudioDeviceManager` | Core Audio input-device enumeration + selection + hot-plug |
-| `AudioRecorder` | `AVAudioEngine` capture → AAC `.m4a`, live level + waveform |
-| `AudioPlayer` | `AVAudioPlayer` playback with a published clock |
-| `WaveformGenerator` | Downsamples a file into amplitude bins for drawing |
-| `Transcriber` | `SFSpeechRecognizer` file transcription, per-language |
-| `RecordingStore` | On-disk files + JSON manifest |
-| `AppModel` | Coordinator tying it all together |
-| `Views/*` | `DeviceBar`, `SidebarView`, `DetailView`, `TranscriptPanel`, `WaveformView` |
+## Using it
+
+- **Record.** Pick your input at the bottom of the sidebar, press the red button, press it again to stop.
+- **Transcribe.** It happens automatically. To redo it in a specific language, pick one from the language menu under the transcript.
+- **Rename.** Click a recording's title to rename it.
+- **Find.** Type in the search box to match titles and transcript text.
+- **Export.** Use the share button (or right-click) for a single recording, or select several and export them all to one folder at once. Transcripts come along as `.txt` files.
+- **Batch actions.** ⌘-click or ⇧-click to select multiple recordings, then delete, favorite, or export the whole set.
+
+## Your privacy
+
+Recording happens on your Mac. Transcription uses Apple's built-in speech recognition, which runs on-device for many languages and may use Apple's servers for others - the same engine the rest of macOS uses. There are no accounts, and nothing is sent to us.
+
+## Requirements
+
+macOS 13 or later. Universal build - runs natively on both Apple Silicon and Intel Macs.
+
+---
+
+*Building from source: it's a pure SwiftPM SwiftUI app - `./build.sh` produces the app; `NOTARIZE=1 ./build.sh` makes a signed, notarized build.*
